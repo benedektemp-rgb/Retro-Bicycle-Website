@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Iron & Chrome Motorcycle Museum
 
-## Getting Started
+A Next.js website for a retro motorcycle museum: Home, Gallery, Events, About, and Contact pages, plus a
+password-protected `/admin` dashboard for editing all of it. Built to deploy on Vercel from GitHub.
 
-First, run the development server:
+The site works out of the box with placeholder content (no setup required to run it locally). To make
+admin edits actually save, and to see your real content in production, connect Supabase and set the
+admin credentials as described below.
+
+## Run it locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. Without any environment variables set, every page renders with placeholder
+motorcycle-museum content from `src/lib/seed-data.ts`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 1. Connect Supabase (so admin edits persist)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Create a free project at [supabase.com](https://supabase.com).
+2. Open **SQL Editor -> New query**, paste in the contents of [`supabase/schema.sql`](supabase/schema.sql),
+   and run it. This creates the `site_settings`, `gallery_items`, and `events` tables (pre-filled with the
+   same placeholder content), a public `media` storage bucket for photo uploads, and read-only public
+   access policies.
+3. In **Project Settings -> API**, copy the **Project URL**, **anon public** key, and **service_role**
+   key (keep the service role key secret -- never put it in client-side code).
 
-## Learn More
+## 2. Set up admin login
 
-To learn more about Next.js, take a look at the following resources:
+Generate a password hash for your chosen admin password:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+node scripts/hash-password.mjs "your-chosen-password"
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+That prints two versions of the hash:
 
-## Deploy on Vercel
+- The **raw hash** -- paste this as-is into Vercel's Environment Variables UI.
+- An **escaped version** (`\$` instead of `$`) for `.env.local` -- Next.js treats `$` in `.env*`
+  files as a variable reference (e.g. `$FOO`), so the literal `$` characters in a bcrypt hash must
+  be escaped with a backslash or the value gets silently mangled. This only applies to `.env` files;
+  Vercel's dashboard does not need escaping.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 3. Environment variables
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Copy `.env.local.example` to `.env.local` and fill in the values from steps 1 and 2:
+
+```bash
+cp .env.local.example .env.local
+```
+
+| Variable | Where it's used |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Public Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public anon key (read-only access) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only key used by admin actions to write data |
+| `ADMIN_USERNAME` | Username for `/admin/login` |
+| `ADMIN_PASSWORD_HASH` | Bcrypt hash from `scripts/hash-password.mjs` |
+| `SESSION_SECRET` | Random string used to sign the admin session cookie |
+
+Restart `npm run dev` after editing `.env.local`.
+
+## 4. Push to GitHub
+
+```bash
+git remote add origin https://github.com/benedektemp-rgb/YOUR_REPO_NAME.git
+git push -u origin main
+```
+
+(Create an empty repository first at github.com/new under the `benedektemp-rgb` account.)
+
+## 5. Deploy on Vercel
+
+1. Go to [vercel.com/new](https://vercel.com/new) and import the GitHub repository.
+2. In the project's **Environment Variables** settings, add all six variables from the table above.
+3. Deploy. Every future push to `main` redeploys automatically.
+
+## Project structure
+
+- `src/app/` -- pages (Home, Gallery, Events, About, Contact, Admin) using the Next.js App Router.
+- `src/app/admin/actions.ts` -- server actions for login/logout and all content CRUD.
+- `src/lib/data.ts` -- data-fetching layer; falls back to seed data when Supabase isn't configured.
+- `src/lib/seed-data.ts` -- placeholder content shown before Supabase is connected.
+- `src/middleware.ts` -- protects `/admin/*` routes, redirecting to `/admin/login` if not signed in.
+- `supabase/schema.sql` -- database schema, security policies, and seed data for Supabase.
