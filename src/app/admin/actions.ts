@@ -175,23 +175,41 @@ function extractMediaStoragePath(imageUrl: string): string | null {
   return imageUrl.slice(index + marker.length);
 }
 
-export async function resetGalleryAction() {
+export async function resetGalleryAction(): Promise<MutationState> {
   await requireSession();
   const admin = getSupabaseAdmin();
-  if (!admin) return;
+  if (!admin || !isSupabaseAdminConfigured()) {
+    return { error: "A Supabase még nincs csatlakoztatva, ezért ez a módosítás nem menthető. Lásd a README fájlt a beállításhoz." };
+  }
 
-  const { data: items } = await admin.from("gallery_items").select("image_url");
+  const { data: items, error: selectError } = await admin.from("gallery_items").select("id, image_url");
+  if (selectError) {
+    console.error("resetGalleryAction: select failed", selectError);
+    return { error: `Nem sikerült lekérni a galéria elemeit: ${selectError.message}` };
+  }
 
   const storagePaths = (items ?? [])
     .map((item) => extractMediaStoragePath(item.image_url))
     .filter((storagePath): storagePath is string => Boolean(storagePath));
 
   if (storagePaths.length > 0) {
-    await admin.storage.from("media").remove(storagePaths);
+    const { error: removeError } = await admin.storage.from("media").remove(storagePaths);
+    if (removeError) {
+      console.error("resetGalleryAction: storage remove failed", removeError);
+    }
   }
 
-  await admin.from("gallery_items").delete().not("id", "is", null);
+  const ids = (items ?? []).map((item) => item.id);
+  if (ids.length > 0) {
+    const { error: deleteError } = await admin.from("gallery_items").delete().in("id", ids);
+    if (deleteError) {
+      console.error("resetGalleryAction: delete failed", deleteError);
+      return { error: `Nem sikerült törölni a galéria elemeit: ${deleteError.message}` };
+    }
+  }
+
   revalidatePublicPages();
+  return { success: true };
 }
 
 export async function saveEventAction(

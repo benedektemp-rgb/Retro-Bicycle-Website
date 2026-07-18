@@ -1,22 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import Image from "next/image";
-import { deleteGalleryItemAction, resetGalleryAction } from "@/app/admin/actions";
+import { deleteGalleryItemAction, resetGalleryAction, type MutationState } from "@/app/admin/actions";
 import DeleteButton from "@/components/admin/DeleteButton";
 import GalleryItemForm from "@/components/admin/GalleryItemForm";
 import type { GalleryItem } from "@/lib/types";
 
+const initialResetState: MutationState = {};
+
 export default function GalleryManager({ items, disabled }: { items: GalleryItem[]; disabled: boolean }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [resetState, resetAction, resetPending] = useActionState(resetGalleryAction, initialResetState);
 
   return (
     <div className="mt-4 space-y-3">
       {items.length > 0 && (
-        <div className="flex justify-end">
+        <div className="flex flex-col items-end gap-1">
           <form
-            action={resetGalleryAction}
+            action={resetAction}
             onSubmit={(event) => {
               if (
                 !confirm(
@@ -29,12 +32,13 @@ export default function GalleryManager({ items, disabled }: { items: GalleryItem
           >
             <button
               type="submit"
-              disabled={disabled}
+              disabled={disabled || resetPending}
               className="text-xs font-semibold text-rust-dark underline disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Galéria törlése (összes motorkerékpár és fénykép)
+              {resetPending ? "Törlés folyamatban..." : "Galéria törlése (összes motorkerékpár és fénykép)"}
             </button>
           </form>
+          {resetState.error && <p className="text-xs font-semibold text-rust-dark">{resetState.error}</p>}
         </div>
       )}
 
