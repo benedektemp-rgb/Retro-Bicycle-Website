@@ -168,6 +168,32 @@ export async function deleteGalleryItemAction(formData: FormData) {
   revalidatePublicPages();
 }
 
+function extractMediaStoragePath(imageUrl: string): string | null {
+  const marker = "/storage/v1/object/public/media/";
+  const index = imageUrl.indexOf(marker);
+  if (index === -1) return null;
+  return imageUrl.slice(index + marker.length);
+}
+
+export async function resetGalleryAction() {
+  await requireSession();
+  const admin = getSupabaseAdmin();
+  if (!admin) return;
+
+  const { data: items } = await admin.from("gallery_items").select("image_url");
+
+  const storagePaths = (items ?? [])
+    .map((item) => extractMediaStoragePath(item.image_url))
+    .filter((storagePath): storagePath is string => Boolean(storagePath));
+
+  if (storagePaths.length > 0) {
+    await admin.storage.from("media").remove(storagePaths);
+  }
+
+  await admin.from("gallery_items").delete().not("id", "is", null);
+  revalidatePublicPages();
+}
+
 export async function saveEventAction(
   _prevState: MutationState,
   formData: FormData

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { deleteGalleryItemAction } from "@/app/admin/actions";
+import { deleteGalleryItemAction, resetGalleryAction } from "@/app/admin/actions";
 import DeleteButton from "@/components/admin/DeleteButton";
 import GalleryItemForm from "@/components/admin/GalleryItemForm";
 import type { GalleryItem } from "@/lib/types";
@@ -13,6 +13,31 @@ export default function GalleryManager({ items, disabled }: { items: GalleryItem
 
   return (
     <div className="mt-4 space-y-3">
+      {items.length > 0 && (
+        <div className="flex justify-end">
+          <form
+            action={resetGalleryAction}
+            onSubmit={(event) => {
+              if (
+                !confirm(
+                  "Biztosan törli az ÖSSZES motorkerékpárt és fényképet a galériából? Ez a lista minden elemét véglegesen eltávolítja, és nem vonható vissza."
+                )
+              ) {
+                event.preventDefault();
+              }
+            }}
+          >
+            <button
+              type="submit"
+              disabled={disabled}
+              className="text-xs font-semibold text-rust-dark underline disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Galéria törlése (összes motorkerékpár és fénykép)
+            </button>
+          </form>
+        </div>
+      )}
+
       {items.map((item) => (
         <div key={item.id} className="border-2 border-espresso bg-cream p-4">
           {editingId === item.id ? (
