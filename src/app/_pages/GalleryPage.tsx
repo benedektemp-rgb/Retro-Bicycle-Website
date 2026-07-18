@@ -17,7 +17,13 @@ export default async function GalleryPage({ locale }: { locale: Locale }) {
     <div>
       <PageHero eyebrow={dict.gallery.eyebrow} title={dict.gallery.title} subtitle={dict.gallery.subtitle} />
       <div className="mx-auto max-w-6xl px-5 py-14">
-        <GalleryGrid items={localizedItems} allLabel={dict.gallery.allFilter} emptyLabel={dict.gallery.empty} />
+        <GalleryGrid
+          items={localizedItems}
+          allLabel={dict.gallery.allFilter}
+          emptyLabel={dict.gallery.empty}
+          searchPlaceholder={dict.gallery.searchPlaceholder}
+          noResultsLabel={dict.gallery.noResults}
+        />
       </div>
     </div>
   );

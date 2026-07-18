@@ -35,6 +35,8 @@ export type Dictionary = {
     subtitle: string;
     allFilter: string;
     empty: string;
+    searchPlaceholder: string;
+    noResults: string;
   };
   events: {
     title: string;
@@ -100,6 +102,8 @@ const en: Dictionary = {
       "Every motorcycle in our collection is fully restored and mechanically sound. Filter by era to explore.",
     allFilter: "All",
     empty: "No motorcycles in this era yet.",
+    searchPlaceholder: "Search by title or category...",
+    noResults: "No motorcycles match your search.",
   },
   events: {
     title: "Events",
@@ -166,6 +170,8 @@ const hu: Dictionary = {
       "Gyűjteményünk minden motorkerékpárja teljesen felújított és műszakilag kifogástalan. Böngésszen korszak szerint szűrve.",
     allFilter: "Összes",
     empty: "Ebből a korszakból még nincs motorkerékpár.",
+    searchPlaceholder: "Keresés cím vagy kategória alapján...",
+    noResults: "Nincs a keresésnek megfelelő motorkerékpár.",
   },
   events: {
     title: "Események",

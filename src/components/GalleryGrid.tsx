@@ -8,19 +8,41 @@ export default function GalleryGrid({
   items,
   allLabel,
   emptyLabel,
+  searchPlaceholder,
+  noResultsLabel,
 }: {
   items: GalleryItem[];
   allLabel: string;
   emptyLabel: string;
+  searchPlaceholder: string;
+  noResultsLabel: string;
 }) {
   const eras = useMemo(() => [allLabel, ...Array.from(new Set(items.map((i) => i.era)))], [items, allLabel]);
   const [activeEra, setActiveEra] = useState(allLabel);
+  const [search, setSearch] = useState("");
 
-  const filtered = activeEra === allLabel ? items : items.filter((item) => item.era === activeEra);
+  const query = search.trim().toLowerCase();
+
+  const filtered = items.filter((item) => {
+    const matchesEra = activeEra === allLabel || item.era === activeEra;
+    const matchesSearch =
+      query.length === 0 ||
+      item.title.toLowerCase().includes(query) ||
+      item.category.toLowerCase().includes(query);
+    return matchesEra && matchesSearch;
+  });
 
   return (
     <div>
-      <div className="flex flex-wrap gap-2">
+      <input
+        type="search"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+        placeholder={searchPlaceholder}
+        className="w-full max-w-sm border-2 border-espresso bg-cream px-3 py-2 text-ink placeholder:text-ink/40 focus:outline-none focus:ring-2 focus:ring-rust"
+      />
+
+      <div className="mt-4 flex flex-wrap gap-2">
         {eras.map((era) => (
           <button
             key={era}
@@ -41,7 +63,9 @@ export default function GalleryGrid({
         ))}
       </div>
 
-      {filtered.length === 0 && <p className="mt-10 text-center text-ink/60">{emptyLabel}</p>}
+      {filtered.length === 0 && (
+        <p className="mt-10 text-center text-ink/60">{query.length > 0 ? noResultsLabel : emptyLabel}</p>
+      )}
     </div>
   );
 }
